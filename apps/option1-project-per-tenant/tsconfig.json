@@ -1,0 +1,36 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "../../",
+    "declaration": false,
+    "declarationMap": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "paths": {
+      "@repo/config": ["../../packages/config/src"],
+      "@repo/database": ["../../packages/database/src"],
+      "@repo/logger": ["../../packages/logger/src"],
+      "@repo/medplum": ["../../packages/medplum/src"],
+      "@repo/shared": ["../../packages/shared/src"],
+      "@repo/types": ["../../packages/types/src"],
+      "@repo/utils": ["../../packages/utils/src"]
+    }
+  },
+  "include": [
+    "src",
+    "../../packages/config/src",
+    "../../packages/database/src",
+    "../../packages/logger/src",
+    "../../packages/medplum/src",
+    "../../packages/shared/src",
+    "../../packages/types/src",
+    "../../packages/utils/src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "../../packages/utils/src/__tests__"
+  ]
+}
