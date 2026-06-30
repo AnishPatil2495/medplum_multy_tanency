@@ -1,0 +1,102 @@
+version: '3.9'
+
+services:
+  # ─────────────────────────────────────────────────────────────
+  # PostgreSQL — shared between both apps and Medplum server
+  # ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: medplum-poc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medplum}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medplum_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-medplum_poc}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-medplum} -d ${POSTGRES_DB:-medplum_poc}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medplum-poc
+
+  # ─────────────────────────────────────────────────────────────
+  # Medplum Server
+  # ─────────────────────────────────────────────────────────────
+  medplum-server:
+    image: medplum/medplum-server:latest
+    container_name: medplum-poc-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '8103:8103'
+    environment:
+      - MEDPLUM_DATABASE_HOST=postgres
+      - MEDPLUM_DATABASE_PORT=5432
+      - MEDPLUM_DATABASE_DBNAME=medplum
+      - MEDPLUM_DATABASE_USERNAME=${POSTGRES_USER:-medplum}
+      - MEDPLUM_DATABASE_PASSWORD=${POSTGRES_PASSWORD:-medplum_secret}
+    volumes:
+      - ./medplum-server.config.json:/usr/src/medplum/packages/server/medplum.config.json:ro
+    networks:
+      - medplum-poc
+
+  # ─────────────────────────────────────────────────────────────
+  # App 1 — Project-per-Tenant
+  # ─────────────────────────────────────────────────────────────
+  app1:
+    build:
+      context: ..
+      dockerfile: apps/option1-project-per-tenant/Dockerfile
+    container_name: medplum-poc-app1
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '${APP1_PORT:-3001}:3001'
+    env_file:
+      - ../apps/option1-project-per-tenant/.env
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-medplum}:${POSTGRES_PASSWORD:-medplum_secret}@postgres:5432/medplum_poc_app1
+      - MEDPLUM_BASE_URL=http://medplum-server:8103
+    networks:
+      - medplum-poc
+
+  # ─────────────────────────────────────────────────────────────
+  # App 2 — Organization-per-Tenant
+  # ─────────────────────────────────────────────────────────────
+  app2:
+    build:
+      context: ..
+      dockerfile: apps/option2-organization-per-tenant/Dockerfile
+    container_name: medplum-poc-app2
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '${APP2_PORT:-3002}:3002'
+    env_file:
+      - ../apps/option2-organization-per-tenant/.env
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-medplum}:${POSTGRES_PASSWORD:-medplum_secret}@postgres:5432/medplum_poc_app2
+      - MEDPLUM_BASE_URL=http://medplum-server:8103
+    networks:
+      - medplum-poc
+
+volumes:
+  postgres_data:
+
+networks:
+  medplum-poc:
+    driver: bridge

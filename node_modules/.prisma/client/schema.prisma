@@ -1,0 +1,119 @@
+// Shared Prisma schema used as the base for both applications.
+// Each app's migration folder is independent.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Common enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum TenantStatus {
+  active
+  inactive
+  suspended
+}
+
+enum SubscriptionPlan {
+  free
+  starter
+  pro
+  enterprise
+}
+
+enum UserRole {
+  admin
+  practitioner
+  patient
+  staff
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// App 1 — Project-per-Tenant models
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TenantProject {
+  id             String           @id @default(uuid())
+  name           String
+  slug           String           @unique
+  status         TenantStatus     @default(active)
+  subscription   SubscriptionPlan @default(free)
+  // Medplum project credentials
+  projectId      String           @unique
+  clientId       String           @unique
+  clientSecret   String
+  medplumBaseUrl String           @default("http://localhost:8103")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  users UserProject[]
+
+  @@index([slug])
+  @@map("tenant_projects")
+}
+
+model UserProject {
+  id           String        @id @default(uuid())
+  email        String
+  passwordHash String
+  passwordSalt String
+  firstName    String
+  lastName     String
+  role         UserRole      @default(staff)
+  isActive     Boolean       @default(true)
+  tenantId     String
+  tenant       TenantProject @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([email, tenantId])
+  @@index([tenantId])
+  @@map("user_projects")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// App 2 — Organization-per-Tenant models
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TenantOrg {
+  id                 String           @id @default(uuid())
+  name               String
+  slug               String           @unique
+  status             TenantStatus     @default(active)
+  subscription       SubscriptionPlan @default(free)
+  // FHIR Organization ID in the shared Medplum project
+  fhirOrganizationId String           @unique
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  users UserOrg[]
+
+  @@index([slug])
+  @@map("tenant_orgs")
+}
+
+model UserOrg {
+  id           String    @id @default(uuid())
+  email        String
+  passwordHash String
+  passwordSalt String
+  firstName    String
+  lastName     String
+  role         UserRole  @default(staff)
+  isActive     Boolean   @default(true)
+  tenantId     String
+  tenant       TenantOrg @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([email, tenantId])
+  @@index([tenantId])
+  @@map("user_orgs")
+}

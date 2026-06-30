@@ -1,0 +1,36 @@
+{
+  "port": 8103,
+  "baseUrl": "http://localhost:8103/",
+  "issuer": "http://localhost:8103/",
+  "audience": "http://localhost:8103/",
+  "jwksUrl": "http://localhost:8103/.well-known/jwks.json",
+  "authorizeUrl": "http://localhost:8103/oauth2/authorize",
+  "tokenUrl": "http://localhost:8103/oauth2/token",
+  "userInfoUrl": "http://localhost:8103/oauth2/userinfo",
+  "appBaseUrl": "http://localhost:3000/",
+  "binaryStorage": "file:./binary",
+  "storageBaseUrl": "http://localhost:8103/storage/",
+  "signingKeyId": "my-key-id",
+  "signingKey": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0Jn+LZFMF7/k3oLMz0MZXV9KZnrBm0JRQFvj+9r4c4d....\n-----END RSA PRIVATE KEY-----",
+  "supportEmail": "support@example.com",
+  "googleClientId": "",
+  "googleClientSecret": "",
+  "recaptchaSiteKey": "",
+  "recaptchaSecretKey": "",
+  "maxJsonSize": "1mb",
+  "allowedOrigins": "*",
+  "database": {
+    "host": "postgres",
+    "port": 5432,
+    "dbname": "medplum",
+    "username": "medplum",
+    "password": "medplum_secret",
+    "ssl": false
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": ""
+  },
+  "emailProvider": "none"
+}
